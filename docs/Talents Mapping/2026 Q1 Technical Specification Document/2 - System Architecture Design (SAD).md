@@ -3,224 +3,239 @@ title: '2 - System Architecture Design (SAD)'
 slug: /talents-mapping/2026-q1-technical-specification-document/system-architecture-design-sad
 ---
 
-## 1. Garis Besar
+## 1\. Ringkasan
 
-Arsitektur Retail 2026 menandai transisi fundamental dari **Monolithic Transaction-Centric** menuju **Modular Service-Oriented**.
+Arsitektur Retail 2026 dirancang menggunakan pendekatan **Modular Monolith**. Aplikasi tetap berada dalam satu *codebase* (Laravel) untuk kemudahan *deployment* dan efisiensi biaya di lingkungan **Shared Hosting**, namun secara internal logika bisnis dipisahkan dengan tegas.
 
-Perubahan kunci meliputi:
+Perubahan dan strategi kunci meliputi:
 
-1. **Decoupling:** Pemisahan logika Keuangan (Commerce), Hak Akses (Entitlement), dan Operasional (Service).
-2. **Scalability:** Penerapan *Asynchronous Processing* (Queue) untuk proses berat seperti kalkulasi komisi dan pelaporan.
-3. **Hybrid Data:** Strategi database berdampingan di mana tabel Legacy tetap dipertahankan untuk integritas historis, sementara fitur baru berjalan di skema database modern yang memanfaatkan fitur **MySQL JSON Column** untuk fleksibilitas konfigurasi.
+1.  **Logical Decoupling:** Memisahkan logika Keuangan (Commerce), Hak Akses (Entitlement), dan Operasional (Service) ke dalam *Service Classes* terpisah, menghindari penumpukan logika di Controller.
 
----
+2.  **Database Driven Infrastructure:** Menggantikan peran Redis (yang tidak tersedia) dengan **Database Queue & Cache** untuk menangani proses berat secara asinkron (background process) menggunakan Cron Job.
 
-## 2. High-Level Design (HLD)
+3.  **Hybrid Data Strategy:** Tabel Legacy dipertahankan untuk integritas historis, sementara fitur baru berjalan di skema database modern yang memanfaatkan **MySQL JSON Column** .
 
-### 2.1. Context Diagram
 
-Gambaran interaksi sistem Retail 2026 dengan aktor dan sistem eksternal.
+* * *
+
+## 2\. High-Level Design (HLD)
+
+### 2.1. Context Diagram (Level 1)
+
+Gambaran interaksi makro antara sistem Retail dengan aktor dan pihak ketiga.
 
 ```mermaid
 flowchart TD
     %% AKTOR
     User((End User))
-    Practitioner((Praktisi / Affiliate))
+    Practitioner((Praktisi - Affiliator))
     Admin((System Admin))
 
     %% SISTEM INTI
-    subgraph Retail["Retail Ecosystem 2026"]
-        CoreSystem[Retail Platform Core]
+    subgraph SharedHosting["Shared Hosting Server"]
+        CoreSystem["Retail Platform\n(Laravel Monolith)"]
     end
 
     %% SISTEM EKSTERNAL
-    PaymentGW["Payment Gateway<br/>(Xendit)"]
-    NotifService["Notification Service<br/>(Waha / Email / Pemberitahuan)"]
-    LegacySys["Legacy Monolith<br/>(Read Only)"]
+    PaymentGW["Payment Gateway\n(Xendit & Midtrans)"]
+    NotifService["WA Gateway\nEmail SMTP"]
 
     %% RELASI
-    User -->|Browsing & Pembelian| CoreSystem
-    Practitioner -->|Atur Jadwal & Cek Komisi| CoreSystem
-    Admin -->|Konfigurasi Produk & Rule| CoreSystem
+    User -->|HTTP Request| CoreSystem
+    Practitioner -->|HTTP Request| CoreSystem
+    Admin -->|HTTP Request| CoreSystem
 
-    CoreSystem -->|Request Pembayaran| PaymentGW
-    PaymentGW -->|Callback Sukses| CoreSystem
-
-    CoreSystem -->|Kirim Notifikasi| NotifService
-    CoreSystem -.->|Ambil Data Riwayat| LegacySys
-
+    CoreSystem -->|API Call| PaymentGW
+    PaymentGW -->|Webhook Callback| CoreSystem
+    CoreSystem -->|API or SMTP| NotifService
 
 ```
 
-### 2.2. Container Diagram
+### 2.2. Container Diagram (Level 2)
 
-Membedah "Retail Platform Core" menjadi modul-modul fungsional.
+Membedah struktur internal aplikasi Laravel (Modular).
+
+*Catatan: Kotak di bawah ini merepresentasikan Modul/Service dalam satu aplikasi, bukan server terpisah.*
 
 ```mermaid
 flowchart TB
-    %% CLIENT
-    WebClient["Web App Frontend"]
-
-    %% API GATEWAY
-    API["API Gateway<br/>Laravel Router"]
-
-    %% BACKEND SERVICES
-    subgraph Backend["Backend Services<br/>(Modular Monolith)"]
-        Commerce["Commerce Engine<br/>Cart, Order, Payment"]
-        Entitlement["Entitlement Core<br/>Ticket Management, Validation"]
-        ServiceDomain["Service Domain<br/>Assessment Engine, Booking"]
-        Commission["Commission Engine<br/>Rule Matrix, Wallet"]
+    %% USER INTERFACE
+    subgraph Frontend["Frontend Layer (Blade Views)"]
+        MemberUI["Member Area<br/>(Canvas Theme)"]
+        AdminUI["Admin Dashboard<br/>(Metronic Theme)"]
     end
 
-    %% DATA PERSISTENCE
-    subgraph Data["Data Persistence"]
-        NewDB["New DB 2026<br/>Entitlements, Rules, Wallets"]
-        LegacyDB["Legacy DB<br/>Transactions, History"]
-        Redis["Redis Cache<br/>Session, Queue"]
+    %% LOGIC LAYER
+    subgraph Backend["Application Logic (Laravel)"]
+        Router["Web Routes<br/>(web.php / front.php)"]
+
+        %% Modules (Services)
+        Commerce["Commerce Service<br/>(Direct Checkout, Order Logic)"]
+        Entitlement["Entitlement Service<br/>(Ticket Logic, Validation)"]
+        ServiceDomain["Product Service<br/>(Assessments, Booking)"]
+        Commission["Commission Service<br/>(Calculation Logic)"]
     end
 
-    %% CLIENT FLOW
-    WebClient -->|HTTPS JSON| API
+    %% DATA LAYER
+    subgraph Data["Database Layer (MySQL)"]
+        NewTables["New Tables<br/>(Entitlements, Rules)"]
+        LegacyTables["Legacy Tables<br/>(Transactions, Users)"]
+        ExistingTables["Existing Tables<br/>(Balances/Ledger)"]
+        SystemTables["System Tables<br/>(Jobs, Failed_Jobs, Cache)"]
+    end
 
-    %% API ROUTING
-    API --> Commerce
-    API --> Entitlement
-    API --> ServiceDomain
-    API --> Commission
+    %% FLOW
+    MemberUI & AdminUI --> Router
 
-    %% DOMAIN INTERACTIONS
-    Commerce -->|Event PAID| Entitlement
-    Commerce -->|Event PAID| Commission
+    Router --> Commerce
+    Router --> Entitlement
+    Router --> ServiceDomain
 
-    Entitlement -->|Validasi Akses| ServiceDomain
-    ServiceDomain -->|Event COMPLETED| Commission
+    %% Interactions (Function Calls)
+    Commerce -- "Call: CreateTicket()" --> Entitlement
+    Entitlement -- "Call: CheckAccess()" --> ServiceDomain
+    Commerce -- "Dispatch: CalcCommission()" --> Commission
 
-    %% DATA ACCESS
-    Commerce -->|Read Write| NewDB
-    Entitlement -->|Read Write| NewDB
-    Commission -->|Read Write| NewDB
+    %% Persistence
+    Commerce & Entitlement & ServiceDomain -->|Eloquent| NewTables
+    Commission -->|Polymorphic Write| ExistingTables
+    Commerce & ServiceDomain -.->|Eloquent Read| LegacyTables
 
-    Commerce -.->|Read Only| LegacyDB
-    ServiceDomain -.->|Read Only| LegacyDB
-
-    %% CACHE
-    Entitlement -.->|Cache Frekuensi Tinggi| Redis
-
+    %% Queue & Cache via DB
+    Commission -.->|Read/Write Job| SystemTables
 ```
 
-**Penjelasan Komponen:**
+**Penjelasan Modul:**
 
-* **Commerce Engine:** Menangani keranjang belanja, hitung harga, dan *interface* ke Payment Gateway.
-* **Entitlement Core:** "Otak" sistem. Menyimpan status tiket. Modul lain harus bertanya ke sini sebelum melayani user.
-* **Service Domain:** Logika bisnis spesifik (Soal Tes, Jawaban, Jadwal Konsul).
-* **Commission Engine:** *Worker* di belakang layar yang menghitung bagi hasil berdasarkan *Rule Matrix*.
+- **Commerce Engine:** Menangani *Direct Checkout* (tanpa Cart kompleks), penentuan harga (diskon/tier), dan pembayaran.
 
----
+- **Entitlement Core:** "Gatekeeper". Menyimpan status tiket (Active/Locked/In_Review). Modul lain wajib bertanya ke sini sebelum melayani user.
 
-## 3. Technology Stack
+- **Service Domain:** Logika bisnis spesifik (Menampilkan Soal Tes, Upload Dokumen Luar, Input Jadwal).
 
-Kami menggunakan stack yang **Robust, Mature, dan High-Performance** untuk ekosistem PHP.
+- **Commission Engine:** *Worker* di belakang layar yang menghitung bagi hasil dan mencatat ke tabel `balances`.
 
-| Komponen | Spesifikasi Teknologi | Alasan Pemilihan |
+
+* * *
+
+## 3\. Technology Stack (Shared Hosting Friendly)
+
+Stack ini dipilih untuk memaksimalkan performa di lingkungan terbatas tanpa akses *root*.
+
+| **Komponen** | **Spesifikasi Teknologi** | **Alasan Pemilihan** |
 | --- | --- | --- |
-| **Language** | **PHP 8.2+** | Fitur *Type Safety* dan performa JIT Compiler terbaik. |
-| **Framework** | **Laravel 10.x / 11.x** | Ekosistem terlengkap (Queue, Event, Auth) untuk pengembangan cepat. |
-| **Database** | **MySQL 8.0** | Dukungan *Native JSON Column* yang esensial untuk menyimpan *Commission Rules* yang dinamis. |
-| **Cache & Queue** | **Redis** | In-memory datastore untuk validasi tiket super cepat dan antrian *job* komisi. |
-| **Web Server** | **Nginx** | *High concurrency handling*. |
-| **Frontend** | *Existing Stack* | (Menyesuaikan stack frontend saat ini, e.g., Blade/Vue/React). |
+| **Language** | **PHP 8.4+** | Standar performa dan keamanan terbaru. |
+| **Framework** | **Laravel 10.x** | Struktur rapi, fitur lengkap, dan *future-proof* untuk API mobile. |
+| **Database** | **MySQL 8.0 / MariaDB** | Penyimpanan data utama + JSON Support. |
+| **Queue Driver** | **Database** | Pengganti Redis. Job antrian disimpan di tabel `jobs`. |
+| **Cache Driver** | **File / Database** | Pengganti Redis. Menyimpan cache query/session. |
+| **Web Server** | **LiteSpeed / Apache** | Bawaan Shared Hosting (LiteSpeed disarankan). |
+| **Frontend** | **Blade + Bootstrap 5.3** | Render di server, ringan untuk client, SEO friendly. |
 
----
+* * *
 
-## 4. Database Strategy (Hybrid Architecture)
+## 4\. Database Strategy (Hybrid Architecture)
 
-### 4.1. Strategi Koeksistensi (*Side-by-Side*)
+### 4.1. Strategi Koeksistensi
 
-Untuk memitigasi risiko migrasi, kita tidak mengubah tabel lama.
+Menggunakan strategi "Tabel Baru di sebelah Tabel Lama". Aplikasi baru membaca tabel `users` dan `transactions` lama untuk mengenali user lama, namun menulis data logika baru ke tabel baru.
 
-1. **Read-Reference:** Aplikasi baru membaca tabel `users` dan `transactions` lama untuk mengenali user lama.
-2. **Write-New:** Semua logika baru (Tiket, Komisi Baru) ditulis ke tabel baru dengan prefix atau database terpisah.
-3. **JSON Flexibility:** Tabel konfigurasi menggunakan kolom JSON untuk menghindari *Schema Altering* setiap kali ada aturan bisnis baru.
+### 4.2. Skema Tabel Kunci
 
-### 4.2. Skema Tabel Kunci (Simplified) (Draft)
+#### **A. `commission_rules` (Tabel Baru)**
 
-**Tabel: `commission_rules` (MySQL 8.0)**
-*Menyimpan logika matriks yang kompleks dalam satu kolom JSON yang indexable.*
+Menyimpan rumus komisi yang dinamis.
 
-```sql
+SQL **DRAFT**  -  *Desain Lengkap Menyusul*
+
+```
 CREATE TABLE commission_rules (
-    id BIGINT PRIMARY KEY,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255),
-    priority INT, -- Untuk Override Logic
+    priority INT DEFAULT 0, -- Urutan prioritas override
 
-    -- Kolom Filter (Untuk Query Cepat)
+    -- Kolom Filter (Indexable)
     recipient_tier ENUM('MEMBER', 'PRACTITIONER', 'INFLUENCER'),
     product_variant_id BIGINT,
 
     -- Kolom Logika (JSON)
-    -- Contoh isi: { "action": "referral", "base": "net_profit", "value": 0.15 }
+    -- Contoh: { "action": "referral", "base": "net_profit", "value": 0.15 }
     rule_config JSON,
 
-    is_active BOOLEAN
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
-
 ```
 
-**Tabel: `entitlements**`
-*Pengganti pengecekan transaksi langsung.*
+#### **B. `entitlements` (Tabel Baru)**
 
-```sql
+Pengganti pengecekan transaksi langsung. Mengelola hak akses dan validasi dokumen luar.
+
+SQL **DRAFT** -  *Desain Lengkap Menyusul*
+
+```
 CREATE TABLE entitlements (
-    id BIGINT PRIMARY KEY,
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT, -- Relasi ke User Lama
     source_transaction_id BIGINT, -- Relasi ke Transaksi Lama/Baru
 
     product_sku VARCHAR(50),
-    status ENUM('LOCKED', 'ACTIVE', 'SCHEDULED', 'COMPLETED', 'VOID'),
+    -- Status IN_REVIEW ditambahkan untuk validasi dokumen luar
+    status ENUM('LOCKED', 'IN_REVIEW', 'ACTIVE', 'SCHEDULED', 'COMPLETED', 'VOID'),
+
+    -- Kolom Validasi Dokumen Eksternal
+    external_document_url VARCHAR(255) NULL,
+    rejection_reason TEXT NULL,
 
     valid_until DATETIME,
-    metadata JSON -- Untuk menyimpan data tambahan (misal: jadwal booking)
+    metadata JSON, -- Data tambahan (log booking, dll)
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
 );
-
 ```
 
----
+#### **C. `balances` (Existing Table)**
 
-## 5. Security Architecture
+Tabel mutasi saldo yang sudah ada. Kita akan memanfaatkannya dengan pola **Polymorphic Relationship**.
 
-### 5.1. Autentikasi & Otorisasi
+| **Kolom** | **Tipe Data** | **Keterangan & Penggunaan Baru** |
+| --- | --- | --- |
+| `id` | char(36) | Primary Key. |
+| `wallet_id` | char(36) | Relasi ke Wallet User. |
+| `balance_type` | char(3) | Kode Mutasi ('IN' / 'OUT'). |
+| `amount` | int(11) | Nominal uang. |
+| `ref_type` | varchar(40) | **KUNCI INTEGRASI.** Diisi Nama Model Laravel (e.g., `App\Models\Entitlement`). |
+| `ref_id` | char(36) | ID dari referensi di atas. |
+| `note` | varchar(512) | Deskripsi (e.g., "Fee Konsultasi Sesi #123"). |
+| `commission_feedback_session_id` | char(36) | *Legacy*. Biarkan NULL, gunakan `ref_id`. |
 
-* **Authentication:** Menggunakan **Laravel Sanctum** (jika API-based) atau Session standar. User DB tetap menggunakan tabel `users` lama agar user tidak perlu reset password.
-* **Authorization:** Menggunakan **RBAC (Role-Based Access Control)**.
-* Setiap request ke API Service Domain harus melampirkan *Token*.
-* Middleware `CheckEntitlement` akan memvalidasi apakah user memiliki tiket aktif di Redis/DB sebelum mengizinkan akses ke Controller.
+* * *
+
+## 5\. Security Architecture
+
+### 5.1. Autentikasi & Role
+
+- **Authentication:** Menggunakan Session standar Laravel (Web) dan persiapan Sanctum (untuk API Mobile masa depan).
+
+- **Role Management:**
+
+    - **Member:** Akses area Member (Canvas Theme).
+
+    - **Praktisi:** Akses dashboard Praktisi (Metronic Theme).
+
+    - **Partner:** Akses Dashboard B2B.
+
+    - **Affiliator:** Logic check gabungan (`is_member` && `is_practitioner`).
+
+- **Middleware:** Implementasi middleware `CheckEntitlement` pada route Service Domain untuk mencegah akses tanpa tiket valid.
 
 
+### 5.2. Integritas Data Keuangan
 
-### 5.2. Proteksi Data Sensitif
+- **Database Transaction:** Setiap operasi yang melibatkan `entitlements` dan `balances` WAJIB dibungkus dalam `DB::transaction()` untuk mencegah data tidak sinkron (contoh: Tiket terbit tapi saldo praktisi tidak bertambah).
 
-* **Data Gaji/Komisi:** Nilai nominal di tabel `wallet_ledger` bersifat rahasia. Akses ke tabel ini dibatasi hanya untuk *Service Commission* dan *Admin Finance*.
-* **Anti-Tampering:** Tabel `wallet_ledger` harus bersifat *Append-Only* (Tidak boleh di-update/delete, jika ada salah input harus buat jurnal koreksi/reversal).
-* **Rate Limiting:** Menerapkan *Throttle* pada API `check-price` dan `checkout` untuk mencegah *bot abuse*.
+- **Append-Only Ledger:** Tabel `balances` tidak boleh di-update/delete sembarangan. Koreksi saldo harus melalui insert baris baru (Adjustment).
 
----
 
-## 6. Infrastructure Requirement
-
-Spesifikasi minimal untuk menjalankan *Engine* baru ini secara optimal (di luar Database Server).
-
-### 6.1. Application Server (Compute)
-
-* **OS:** Linux (Ubuntu 22.04 LTS).
-* **CPU:** Min 2 vCPU (Disarankan 4 vCPU untuk handle request concurrent tinggi).
-* **RAM:** Min 4GB (Disarankan 8GB agar *Calculation Worker* tidak OOM).
-* **Process Manager:** Supervisor (Wajib, untuk menjalankan Queue Worker Komisi).
-
-### 6.2. Background Services
-
-* **Redis:** Wajib *dedicated* atau *managed instance* (jangan di-install di app server jika trafik tinggi). Digunakan untuk menyimpan sesi user dan antrian kalkulasi.
-* **Cron Job:** Diperlukan untuk *Scheduled Task* (misal: Auto-expire tiket yang sudah lewat masa berlaku).
-
----
-
-Apakah struktur SAD ini sudah cukup teknis untuk didiskusikan dengan tim Developer Anda? Jika ya, kita bisa lanjut ke detail **Database Schema (ERD)** atau **API Contract**.
+* * *

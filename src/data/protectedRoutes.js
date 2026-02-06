@@ -7,7 +7,7 @@ const protectedRoutes = [
   {
     // Protect entire "Talents Mapping" folder
     path: '/docs/talents-mapping',
-    accessKey: 'tm-iam-2026',
+    accessKey: 'TMIAM2026!',
     storageKey: 'talents-mapping-access',
     title: 'Talents Mapping Documentation',
     description: 'This documentation contains confidential talent mapping information. Please enter your access key to continue.',
