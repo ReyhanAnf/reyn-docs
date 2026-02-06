@@ -1,76 +1,81 @@
 ---
 sidebar_position: 1
 title: Talents Mapping Overview
-description: Comprehensive overview of the 2026 Q1 Technical Specifications and Architecture
+description: Comprehensive overview of Technical Specifications, Architecture, and Legacy System
 slug: /talents-mapping/overview
 ---
 
 import FeatureCard from '@site/src/components/FeatureCard';
-import { FiLayers, FiDatabase, FiActivity, FiCpu } from 'react-icons/fi';
+import { FiLayers, FiCpu, FiDatabase, FiActivity, FiServer, FiArchive } from 'react-icons/fi';
 
-# Talents Mapping Overview
+# Talents Mapping Documentation
 
-Welcome to the **Talents Mapping** technical documentation hub. This section serves as the central repository for the **2026 Q1 Technical Specification Document**, detailing the architectural transformation, disparate system integration, and retail module specifications.
+Selamat datang di pusat dokumentasi teknis Talents Mapping. Dokumentasi ini terbagi menjadi dua era utama: Sistem Legacy (Existing) dan Rencana Transformasi 2026.
 
-:::info Confidential
-This entire section is **protected**. Access is restricted to authorized personnel with the correct security clearance key.
+:::note Confidential
+Seluruh dokumentasi dalam folder ini bersifat **Confidential**.
 :::
 
-## Core Documentation Structure
+## Existing System (Legacy)
 
-The documentation is organized into three primary pillars supporting the architectural transformation:
+Dokumentasi untuk sistem yang sedang berjalan saat ini (Production).
 
-<div className="features-grid">
-  <div className="row">
-    <div className="col col--6 margin-bottom--lg">
-      <FeatureCard
-        icon={FiCpu}
-        title="Product Retail Modules"
-        description="Technical specs for Product Pricing Engine, Upgrading Mechanisms, and Tiering Logic."
-        link="/docs/talents-mapping/2026-q1-technical-specification-document/blueprint-transformasi-arsitektur-sistem-retai"
-      />
-    </div>
-    <div className="col col--6 margin-bottom--lg">
-      <FeatureCard
-        icon={FiLayers}
-        title="System Architecture"
-        description="Comprehensive blueprints for the Retail System transformation and Standalone Architecture Design (SAD)."
-        link="/docs/talents-mapping/2026-q1-technical-specification-document/system-architecture-design-sad"
-      />
-    </div>
-    <div className="col col--6 margin-bottom--lg">
-      <FeatureCard
-        icon={FiDatabase}
-        title="Pricing Engine"
-        description="ERD Schemas, Commission Logic, and Proportional Distribution algorithms."
-        link="/docs/talents-mapping/module-product-retail/pricing-engine-proportional-distribution"
-      />
-    </div>
-    <div className="col col--6 margin-bottom--lg">
-      <FeatureCard
-        icon={FiActivity}
-        title="GAP Analysis"
-        description="Analysis of existing architectural gaps and the fundamental concepts for the new system."
-        link="/docs/talents-mapping/gap/produk-gap"
-      />
-    </div>
+<div className="row">
+  <div className="col col--6 margin-bottom--lg">
+    <FeatureCard
+      icon={FiServer}
+      title="Legacy Overview"
+      description="Central hub for current system architecture, database, and API documentation."
+      link="/docs/talents-mapping/existing-system/overview"
+    />
+  </div>
+  <div className="col col--6 margin-bottom--lg">
+    <FeatureCard
+      icon={FiArchive}
+      title="System Architecture"
+      description="Monolith architecture topology and server configuration."
+      link="/docs/talents-mapping/existing-system/system-architecture"
+    />
   </div>
 </div>
 
-## Technical Roadmap (2026 Q1)
-
-This documentation covers the strategic technical initiatives for Q1 2026, focusing on:
-
-1.  **Transformasi Arsitektur**: Moving from legacy monolithic structures to a modular, scalable retail architecture.
-2.  **Product Pricing Engine**: Implementation of a dynamic pricing and distribution engine.
-3.  **Commission System Overhaul**: Redesigning the commission structure with new ERD and calculation logic.
-
-## Key Resources
-
-- **[Blueprint Transformasi](/docs/talents-mapping/2026-q1-technical-specification-document/blueprint-transformasi-arsitektur-sistem-retai)**: The high-level vision and execution plan.
-- **[Konsep Dasar](/docs/talents-mapping/2026-q1-technical-specification-document/arsitektur/module-product-retail/konsep-dasar)**: Fundamental concepts driving the module design.
-- **[Report Templates](/docs/talents-mapping/2026-q1-technical-specification-document/resource/report-pdf-template)**: Standardized templates for reporting and data output.
-
 ---
 
-> **Note**: Please ensure you review the **[Dasar Perubahan Konsep](/docs/talents-mapping/2026-q1-technical-specification-document/arsitektur/dasar-perubahan-konsep)** before proceeding to specific module implementation guides.
+## 2026 Transformation Plan
+
+Rencana transformasi arsitektur menuju Service-Oriented (Modular Monolith) untuk Q1 2026.
+
+<div className="row">
+  <div className="col col--6 margin-bottom--lg">
+    <FeatureCard
+      icon={FiLayers}
+      title="Blueprint & Roadmap"
+      description="The grand plan: From Monolith to Modular. Gap analysis and migration strategy."
+      link="/docs/talents-mapping/2026-q1-technical-specification-document/blueprint-transformasi-arsitektur-sistem-retai"
+    />
+  </div>
+  <div className="col col--6 margin-bottom--lg">
+    <FeatureCard
+      icon={FiCpu}
+      title="Architecture Design (SAD)"
+      description="High-level design, context diagrams, and technology stack for 2026."
+      link="/docs/talents-mapping/2026-q1-technical-specification-document/system-architecture-design-sad"
+    />
+  </div>
+  <div className="col col--6 margin-bottom--lg">
+    <FeatureCard
+      icon={FiDatabase}
+      title="Pricing & Commission"
+      description="New Pricing Engine logic and Dynamic Commission Rules matrix."
+      link="/docs/talents-mapping/2026-q1-technical-specification-document/functional-spesification-document-fsd"
+    />
+  </div>
+  <div className="col col--6 margin-bottom--lg">
+    <FeatureCard
+      icon={FiActivity}
+      title="GAP Analysis"
+      description="Detailed breakdown of problems in the current system and proposed solutions."
+      link="/docs/talents-mapping/2026-q1-technical-specification-document/Arsitektur/GAP/%5BProduk%5D%20GAP%20Arstektur%20Sistem%20Lama%20dan%20Baru"
+    />
+  </div>
+</div>
