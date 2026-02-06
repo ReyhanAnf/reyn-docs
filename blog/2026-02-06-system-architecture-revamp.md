@@ -1,6 +1,6 @@
 ---
 slug: system-architecture-revamp-2026
-title: Moving from Monolith to Modular: The 2026 Vision
+title: "Moving from Monolith to Modular: The 2026 Vision"
 authors: [reyhan]
 tags: [architecture, system-design, legacy-migration]
 date: 2026-02-06
