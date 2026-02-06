@@ -293,12 +293,21 @@ code {
    ============================================ */
 
 .navbar {
-  height: var(--ifm-navbar-height);
+  /* height: var(--ifm-navbar-height); - Removed to prevent cutting off mobile menu */
+  min-height: var(--ifm-navbar-height);
   background-color: var(--ifm-navbar-background-color);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: var(--ifm-navbar-shadow);
   transition: all var(--ifm-transition-base);
+}
+
+/* Mobile Sidebar Fix */
+@media screen and (max-width: 996px) {
+  .navbar-sidebar {
+    background-color: var(--ifm-background-color);
+    z-index: 100; /* Ensure it's above other elements */
+  }
 }
 
 .navbar__title {

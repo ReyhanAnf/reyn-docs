@@ -24,26 +24,26 @@ The documentation is organized into three primary pillars supporting the archite
   <div className="row">
     <div className="col col--6 margin-bottom--lg">
       <FeatureCard
-        icon={FiLayers}
-        title="System Architecture"
-        description="Comprehensive blueprints for the Retail System transformation and Standalone Architecture Design (SAD)."
-        link="/docs/talents-mapping/2026-q1-technical-specification-document/2 - system-architecture-design-sad"
+        icon={FiCpu}
+        title="Product Retail Modules"
+        description="Technical specs for Product Pricing Engine, Upgrading Mechanisms, and Tiering Logic."
+        link="/docs/talents-mapping/2026-q1-technical-specification-document/blueprint-transformasi-arsitektur-sistem-retai"
       />
     </div>
     <div className="col col--6 margin-bottom--lg">
       <FeatureCard
-        icon={FiCpu}
-        title="Product Retail Modules"
-        description="Technical specs for Product Pricing Engine, Upgrading Mechanisms, and Tiering Logic."
-        link="/docs/talents-mapping/2026-q1-technical-specification-document/arsitektur/module-product-retail/konsep-dasar"
+        icon={FiLayers}
+        title="System Architecture"
+        description="Comprehensive blueprints for the Retail System transformation and Standalone Architecture Design (SAD)."
+        link="/docs/talents-mapping/2026-q1-technical-specification-document/system-architecture-design-sad"
       />
     </div>
     <div className="col col--6 margin-bottom--lg">
       <FeatureCard
         icon={FiDatabase}
-        title="Data & Commission"
+        title="Pricing Engine"
         description="ERD Schemas, Commission Logic, and Proportional Distribution algorithms."
-        link="/docs/talents-mapping/2026-q1-technical-specification-document/arsitektur/module-product-retail/erd-commission"
+        link="/docs/talents-mapping/module-product-retail/pricing-engine-proportional-distribution"
       />
     </div>
     <div className="col col--6 margin-bottom--lg">
@@ -51,7 +51,7 @@ The documentation is organized into three primary pillars supporting the archite
         icon={FiActivity}
         title="GAP Analysis"
         description="Analysis of existing architectural gaps and the fundamental concepts for the new system."
-        link="/docs/talents-mapping/2026-q1-technical-specification-document/arsitektur/gap/komisi-gap-komisi"
+        link="/docs/talents-mapping/gap/produk-gap"
       />
     </div>
   </div>
