@@ -10,7 +10,7 @@ import { themes as prismThemes } from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'Reyhan Docs',
+  title: 'RDocs',
   tagline: 'Technical Documentation by Reyhan Andrea Firdaus',
   favicon: 'img/favicon.ico',
 
@@ -43,13 +43,61 @@ const config = {
   markdown: {
     mermaid: true,
   },
+
+  plugins: [
+    'docusaurus-plugin-sass',
+    'docusaurus-plugin-image-zoom',
+    [
+      '@docusaurus/plugin-ideal-image',
+      {
+        quality: 70,
+        max: 1030,
+        min: 640,
+        steps: 2,
+        disableInDev: false,
+      },
+    ],
+    [
+      '@docusaurus/plugin-pwa',
+      {
+        debug: false,
+        offlineModeActivationStrategies: [
+          'appInstalled',
+          'standalone',
+          'queryString',
+        ],
+        pwaHead: [
+          {
+            tagName: 'link',
+            rel: 'icon',
+            href: '/img/logo.svg',
+          },
+          {
+            tagName: 'link',
+            rel: 'manifest',
+            href: '/manifest.json',
+          },
+          {
+            tagName: 'meta',
+            name: 'theme-color',
+            content: '#6366f1',
+          },
+        ],
+      },
+    ],
+  ],
+
   themes: [
     '@docusaurus/theme-mermaid',
+    '@docusaurus/theme-live-codeblock',
     [
       require.resolve("@easyops-cn/docusaurus-search-local"),
       /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
       ({
         hashed: true,
+        language: ["en"],
+        highlightSearchTermsOnTargetPage: true,
+        explicitSearchResultPath: true,
       }),
     ],
   ],
@@ -94,20 +142,23 @@ const config = {
       // Replace with your project's social card
       image: 'img/docusaurus-social-card.jpg',
       colorMode: {
+        defaultMode: 'light',
+        disableSwitch: false,
         respectPrefersColorScheme: true,
       },
       navbar: {
-        title: 'Reyhan Docs',
+        title: 'RDocs',
         logo: {
-          alt: 'Reyhan Docs Logo',
+          alt: 'RDocs Logo',
           src: 'img/logo.svg',
         },
+        hideOnScroll: false,
         items: [
           {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Tutorial',
+            label: 'Documentation',
           },
           {to: '/blog', label: 'Blog', position: 'left'},
           {
